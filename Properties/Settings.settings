@@ -1,0 +1,27 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="SerialPortCommunication.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="IP_Address" Type="System.String" Scope="User">
+      <Value Profile="(Default)">192.168.03.50</Value>
+    </Setting>
+    <Setting Name="Port_Number" Type="System.String" Scope="User">
+      <Value Profile="(Default)">5000</Value>
+    </Setting>
+    <Setting Name="Ip" Type="System.String" Scope="User">
+      <Value Profile="(Default)">192.168.0.10</Value>
+    </Setting>
+    <Setting Name="SubnetMask" Type="System.String" Scope="User">
+      <Value Profile="(Default)">255.255.248.0</Value>
+    </Setting>
+    <Setting Name="DefaultGateway" Type="System.String" Scope="User">
+      <Value Profile="(Default)">192.168.0.2</Value>
+    </Setting>
+    <Setting Name="MonitoringPort" Type="System.String" Scope="User">
+      <Value Profile="(Default)">1100</Value>
+    </Setting>
+    <Setting Name="MacId" Type="System.String" Scope="User">
+      <Value Profile="(Default)">00:1A:C2:7B:00:26</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>

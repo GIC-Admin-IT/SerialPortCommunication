@@ -1,0 +1,44 @@
+<ModelList>
+  <Model>
+    <ProductId>10</ProductId>
+    <ModelId>11</ModelId>
+    <Name>4.3 Ethernet</Name>
+	<X_Resolution>480</X_Resolution>
+	<Y_Resolution>272</Y_Resolution>  
+  </Model>
+  <Model>
+    <ProductId>10</ProductId>
+    <ModelId>12</ModelId>
+    <Name>4.3 Non Ethernet</Name>
+  	<X_Resolution>480</X_Resolution>
+	<Y_Resolution>272</Y_Resolution>  
+  </Model>
+  <Model>
+    <ProductId>20</ProductId>
+    <ModelId>21</ModelId>
+    <Name>7 Ethernet</Name>
+	<X_Resolution>800</X_Resolution>
+	<Y_Resolution>480</Y_Resolution>  
+  </Model>
+  <Model>
+    <ProductId>20</ProductId>
+    <ModelId>22</ModelId>
+    <Name>7 Non Ethernet</Name>
+  	<X_Resolution>800</X_Resolution>
+	<Y_Resolution>480</Y_Resolution>  
+  </Model>
+  <Model>
+    <ProductId>30</ProductId>
+    <ModelId>31</ModelId>
+    <Name>10 Ethernet</Name>
+  	<X_Resolution>1024</X_Resolution>
+	<Y_Resolution>600</Y_Resolution>  
+  </Model>
+  <Model>
+    <ProductId>30</ProductId>
+    <ModelId>32</ModelId>
+    <Name>10 Non Ethernet</Name>
+  	<X_Resolution>1024</X_Resolution>
+	<Y_Resolution>600</Y_Resolution>  
+  </Model>
+</ModelList>
