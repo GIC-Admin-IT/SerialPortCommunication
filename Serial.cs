@@ -9,6 +9,7 @@ using System.Windows.Forms;
 using System.IO;
 using Supporting_DLL;
 using System.Diagnostics;
+using Serilog;
 
 namespace SerialPortCommunication
 {
@@ -26,9 +27,9 @@ namespace SerialPortCommunication
         private string _serialLadderFilePath;
         private string _serialEthernetSettingFilePath;
         private string _serialMacIDFilepath;
+        private string _serialEncryptionFilePath;
         private string _serialSystemRTCFilepath;
         private long _serialFrmDcryptionSize;
-        private bool _serialIsResetFirmwareEncryptionMode;
         private byte[] _serialFrmDcryptionCRC;
 
         string _communicationMode;
@@ -101,6 +102,9 @@ namespace SerialPortCommunication
             _serialEthernetSettingFilePath = pComParam.ethernetFilePath;
             _serialMacIDFilepath = pComParam.macIdFilePath;
             _serialSystemRTCFilepath = pComParam.RTCSyncFilePath;
+            _serialEncryptionFilePath= pComParam.encryptionFilePath;
+
+           // Log.Information("Serial class Initialize method started with encryptionFilePath: " + pComParam.encryptionFilePath);
 
             _deviceFWDownload = pComParam.isFirmware;
             _deviceAppDownload = pComParam.isApplication;
@@ -114,9 +118,10 @@ namespace SerialPortCommunication
 
             _modelID = pComParam.modelID;
 
+          //  Log.Information("Serial class Initialize method started with Model ID: " + _modelID);
+
             _serialFrmDcryptionCRC = pComParam.FrmDcryptionCRC;
             _serialFrmDcryptionSize = pComParam.FrmDcryptionSize;
-            _serialIsResetFirmwareEncryptionMode = pComParam.IsResetFirmwareEncryptionMode;
 
             return 0;
         }
@@ -232,6 +237,8 @@ namespace SerialPortCommunication
 
         public ErrorCode ReadData()
         {
+            //Log.Information("Serial class ReadData method started");
+
             int retryCount = 0;
             OnProgressEvent("-10", 1, CurrentDownload.None);//Connecting device
             try
@@ -286,6 +293,8 @@ namespace SerialPortCommunication
                     try
                     {
                         _serialComPort.Write(TxBuffer, 0, TxBuffer.Length);
+
+                        //Log.Information("Serial class GIC_SYNC Frame Sent: " + BitConverter.ToString(TxBuffer));
 
                         if (WaitForresponse() == ErrorCode.ReadTimeoutError)
                         {
@@ -407,21 +416,32 @@ namespace SerialPortCommunication
 
                 retryCount = 0;
                 string receivedData = ASCIIEncoding.ASCII.GetString(RxBuffer);
+
+                //Log.Information("Serial class Received Data After GIC_SYNC Frame Sent: " + receivedData);
+
                 //rtxtDataArea.AppendText(receivedData);.
                 string compareDataFromRxBuffer = receivedData.Substring(0, 8);
                 int modelID = (RxBuffer[8] + (RxBuffer[9] << 8));
+
+               // Log.Information("Serial class Model ID from Device FW: " + modelID);
+
                 int firmwareVersion = (RxBuffer[10] + (RxBuffer[11] << 8));
                 bool _isBootDownload = (RxBuffer[14] + (RxBuffer[15] << 8)) == 0 ? true : false;
 
                 int bootVersionNo = RxBuffer[12];
 
-                if (bootVersionNo >= 15 && _deviceFWDownload)
+                //Log.Information("Serial class bootVersionNo: " + RxBuffer[12]);
+
+                if (bootVersionNo >= 11 && _deviceFWDownload)
                     _deviceFWEncyptionDownload = true;
 
                 Array.Clear(RxBuffer, 0, RxBuffer.Length);
 
                 if (_isStandAloneUtility == true)
                 {
+
+                    //Log.Information("Serial class Model ID from Device: " + modelID+ "Stand "+ _isStandAloneUtility);
+
                     string filePath = "";
                     if (_deviceFWDownload)
                         filePath = _serialFWFilePath;
@@ -455,6 +475,7 @@ namespace SerialPortCommunication
 
                 if (strSync == compareDataFromRxBuffer && modelID == _modelID)
                 {
+                    //Log.Information("Serial class Model ID Matched: " + modelID);
 
                     retryCount = 0;
                     while (true)
@@ -482,6 +503,8 @@ namespace SerialPortCommunication
                         kapsSleep(10);
                         bytesToRead = 5;
                         _serialComPort.Write(TxBuffer, 0, TxBuffer.Length);
+
+                        //Log.Information("Serial class DOWNLOAD_INFO Frame Sent: " + BitConverter.ToString(TxBuffer));
 
                         //Thread.Sleep(2000);//KV added
                         if (WaitForresponse() == ErrorCode.ReadTimeoutError)
@@ -514,6 +537,9 @@ namespace SerialPortCommunication
                     //Thread.Sleep(5);//KV added
 
                     string receivedData1 = ASCIIEncoding.ASCII.GetString(RxBuffer);
+
+                    //Log.Information("Serial class Received Data After DOWNLOAD_INFO Frame Sent: " + receivedData1);
+
                     Array.Clear(RxBuffer, 0, RxBuffer.Length);
                     string compareDataFromRxBuffer1 = receivedData1.Substring(0, 5);
                     if ("READY" == compareDataFromRxBuffer1)//ToDo substring
@@ -527,10 +553,11 @@ namespace SerialPortCommunication
                             {
                                 filename = _serialFWFilePath;
 
-                                if (bootVersionNo >= 15 && !_serialIsResetFirmwareEncryptionMode)
+                                if (bootVersionNo >= 11)
                                 {
-                                    _serialFWFilePath += "_encrypted";
                                     filename = _serialFWFilePath;
+
+                                    Serilog.Log.Information("Serial class Serial class Encrypted FW File Path: " + filename);
                                 }
 
                                 if (!File.Exists(filename))
@@ -616,7 +643,10 @@ namespace SerialPortCommunication
                             }
                             else if (_deviceFWEncyptionDownload)
                             {
-                                filename = Path.Combine(Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath), "EncryptionKeyFile");
+                                //Log.Information("Serial class Firmware Encryption Key File Path: " + _serialEncryptionFilePath);
+
+                                filename = _serialEncryptionFilePath;
+
                                 if (!File.Exists(filename))
                                 {
                                     OnProgressEvent("0", 0, CurrentDownload.MSG_DOWNLOAD_FAILED);
@@ -669,6 +699,8 @@ namespace SerialPortCommunication
                                     bytesToRead = 13;
                                     _serialComPort.Write(TxBuffer, 0, TxBuffer.Length);
 
+                                   // Log.Information("Serial class " + DWNL + " Frame Sent: " + BitConverter.ToString(TxBuffer));
+
                                     //Thread.Sleep(1);//KV added
                                     if (WaitForresponse(DWNL) == ErrorCode.ReadTimeoutError)
                                     {
@@ -703,6 +735,9 @@ namespace SerialPortCommunication
                                 retryCount = 0;
 
                                 string receivedData2 = ASCIIEncoding.ASCII.GetString(RxBuffer);
+
+                                //Log.Information("Serial class Received Data After " + DWNL + " Frame Sent: " + receivedData2);
+
                                 Array.Clear(RxBuffer, 0, RxBuffer.Length);
 
                                 int RetryCnt = 0;
@@ -800,6 +835,8 @@ namespace SerialPortCommunication
 
                                                 _serialComPort.Write(TxBuffer, 0, FRAMEWITHHEADERS);
                                                 Console.WriteLine("FrameNumber - " + i + " " + TxBuffer.Length);
+                                                if(DWNL == "EF_DWNL")
+                                                Log.Information("Serial class Frame Sent for Frame Number: " + (i + 1) + " Data: " + BitConverter.ToString(TxBuffer));
                                             }
                                             catch (TimeoutException ex)
                                             {
@@ -961,6 +998,8 @@ namespace SerialPortCommunication
 
                                         _serialComPort.Write(TxBuffer, 0, noOfBytes + 2 + 4);
 
+                                        //Log.Information("Serial class Last Frame Sent: " + BitConverter.ToString(TxBuffer));
+
                                         Console.WriteLine("Written All Bytes");
                                     }
                                     catch (TimeoutException ex)
@@ -1086,24 +1125,48 @@ namespace SerialPortCommunication
                                 TxBuffer = ASCIIEncoding.ASCII.GetBytes(strSync);
                                 Array.Resize(ref TxBuffer, 20);
 
-                                TxBuffer[strSync.Length] = fileLength[0]; //Firware size
-                                TxBuffer[strSync.Length + 1] = fileLength[1];
-                                TxBuffer[strSync.Length + 2] = fileLength[2];
-                                TxBuffer[strSync.Length + 3] = fileLength[3];
-
-                                TxBuffer[strSync.Length + 4] = arrCRCTotal[0]; // 2byte crc
-                                TxBuffer[strSync.Length + 5] = arrCRCTotal[1];
-
-                                if (bootVersionNo >= 15 && DWNL == "FW_DWNL" && !_serialIsResetFirmwareEncryptionMode)
+                                if (downloadInProgress == 1)
                                 {
-                                    TxBuffer[strSync.Length + 4] = _serialFrmDcryptionCRC[0]; // 2byte crc
-                                    TxBuffer[strSync.Length + 5] = _serialFrmDcryptionCRC[1];
-                                }
+                                    TxBuffer[strSync.Length] = BitConverter.GetBytes(_serialFrmDcryptionSize)[0]; //Firware size
+                                    TxBuffer[strSync.Length + 1] = BitConverter.GetBytes(_serialFrmDcryptionSize)[1]; ;
+                                    TxBuffer[strSync.Length + 2] = BitConverter.GetBytes(_serialFrmDcryptionSize)[2]; ;
+                                    TxBuffer[strSync.Length + 3] = BitConverter.GetBytes(_serialFrmDcryptionSize)[3]; ;
 
-                                TxBuffer[strSync.Length + 6] = BitConverter.GetBytes(_serialFrmDcryptionSize)[0];
-                                TxBuffer[strSync.Length + 7] = BitConverter.GetBytes(_serialFrmDcryptionSize)[1];
-                                TxBuffer[strSync.Length + 8] = BitConverter.GetBytes(_serialFrmDcryptionSize)[2];
-                                TxBuffer[strSync.Length + 9] = BitConverter.GetBytes(_serialFrmDcryptionSize)[3];
+                                    //Serilog.Log.Information("Serial class Firmware decryption size - " + _serialFrmDcryptionSize);
+
+
+                                    TxBuffer[strSync.Length + 4] = arrCRCTotal[0]; // 2byte crc
+                                    TxBuffer[strSync.Length + 5] = arrCRCTotal[1];
+
+                                    //Serilog.Log.Information("Serial class Firmware CRC - " + arrCRCTotal[0] + " " + arrCRCTotal[1]);
+
+                                    if (bootVersionNo >= 11)
+                                    {
+                                        TxBuffer[strSync.Length + 4] = _serialFrmDcryptionCRC[0]; // 2byte crc
+                                        TxBuffer[strSync.Length + 5] = _serialFrmDcryptionCRC[1];
+
+                                        //Serilog.Log.Information("Serial class Firmware CRC - " + arrCRCTotal[0] + " " + arrCRCTotal[1]);
+
+                                    }
+
+                                    TxBuffer[strSync.Length + 6] = fileLength[0];
+                                    TxBuffer[strSync.Length + 7] = fileLength[1];
+                                    TxBuffer[strSync.Length + 8] = fileLength[2];
+                                    TxBuffer[strSync.Length + 9] = fileLength[3];
+
+                                    //Serilog.Log.Information("Serial class Firmware size - " + fileLength[0] + " " + fileLength[1] + " " + fileLength[2] + " " + fileLength[3]);
+
+                                }
+                                else
+                                {
+                                    TxBuffer[strSync.Length] = fileLength[0]; //Firware size
+                                    TxBuffer[strSync.Length + 1] = fileLength[1];
+                                    TxBuffer[strSync.Length + 2] = fileLength[2];
+                                    TxBuffer[strSync.Length + 3] = fileLength[3];
+
+                                    TxBuffer[strSync.Length + 4] = arrCRCTotal[0]; // 2byte crc
+                                    TxBuffer[strSync.Length + 5] = arrCRCTotal[1];
+                                }
 
                                 try
                                 {
@@ -1112,6 +1175,8 @@ namespace SerialPortCommunication
                                     _serialComPort.DiscardInBuffer();
                                     _serialComPort.DiscardOutBuffer();
                                     _serialComPort.Write(TxBuffer, 0, TxBuffer.Length);
+
+                                    Log.Information("Serial class " + strSync + " Frame Sent: " + BitConverter.ToString(TxBuffer));
                                 }
                                 catch (TimeoutException ex)
                                 {                                   

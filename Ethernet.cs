@@ -9,6 +9,7 @@ using System.Windows.Forms;
 using System.IO;
 using System.Threading;
 using Supporting_DLL;
+using Serilog;
 
 namespace SerialPortCommunication
 {
@@ -24,11 +25,11 @@ namespace SerialPortCommunication
         string _ethernetAppFilePath;
         string _ethernetFontFilePath;
         string _ethernetLadderFilePath;
+        string _ethernetEncryptionFilePath;
         private string _ethernetSettingFilePath;
         private string _ethernetMacIDFilepath;
         private byte[] _ethernetFrmDcryptionCRC;
         private long _ethernetFrmDcryptionSize;
-        private bool _ethernetIsResetFirmwareEncryptionMode;
 
 
         //private const int FRAMEWITHHEADERS = 262;
@@ -66,6 +67,8 @@ namespace SerialPortCommunication
 
             _ethernetMacIDFilepath = pComParam.macIdFilePath;
 
+            _ethernetEncryptionFilePath = pComParam.encryptionFilePath;
+
             _deviceFWDownload = pComParam.isFirmware;
 
             _deviceAppDownload = pComParam.isApplication;
@@ -83,8 +86,6 @@ namespace SerialPortCommunication
             _ethernetFrmDcryptionCRC = pComParam.FrmDcryptionCRC;
 
             _ethernetFrmDcryptionSize = pComParam.FrmDcryptionSize;
-
-            _ethernetIsResetFirmwareEncryptionMode = pComParam.IsResetFirmwareEncryptionMode;
 
 
             return 0;
@@ -137,6 +138,8 @@ namespace SerialPortCommunication
 
         public ErrorCode ReadData()
         {
+            Log.Information("Ethernet ReadData started");
+
             int RETRYCOUNT = 0;
             int MAXRETRY = 4;
 
@@ -204,7 +207,7 @@ namespace SerialPortCommunication
 
                     bootVersionNo = ReadBuffer[12];
 
-                    if (bootVersionNo >= 15 && _deviceFWDownload)
+                    if (bootVersionNo >= 11 && _deviceFWDownload)
                         _deviceFWEncyptionDownload = true;
 
                     if (modelID != _modelID)
@@ -311,9 +314,8 @@ namespace SerialPortCommunication
                 {
                     filename = _ethernetFWFilePath;
 
-                    if (bootVersionNo >= 15 && !_ethernetIsResetFirmwareEncryptionMode)
+                    if (bootVersionNo >= 11)
                     {
-                        _ethernetFWFilePath += "_encrypted";
                         filename = _ethernetFWFilePath;
                     }
 
@@ -376,7 +378,7 @@ namespace SerialPortCommunication
                 }
                 else if (_deviceFWEncyptionDownload)
                 {
-                    filename = Path.Combine(Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath), "EncryptionKeyFile");
+                    filename = _ethernetEncryptionFilePath;
 
                     if (!File.Exists(filename))
                     {
@@ -825,25 +827,38 @@ namespace SerialPortCommunication
                 WriteBuffer = ASCIIEncoding.ASCII.GetBytes(check);
                 Array.Resize(ref WriteBuffer, 20);
 
-                WriteBuffer[check.Length] = fileLength[0]; //Firware size
-                WriteBuffer[check.Length + 1] = fileLength[1];
-                WriteBuffer[check.Length + 2] = fileLength[2];
-                WriteBuffer[check.Length + 3] = fileLength[3];
-
-                WriteBuffer[check.Length + 4] = arrCRCTotal[0]; // 2byte crc
-                WriteBuffer[check.Length + 5] = arrCRCTotal[1];
-
-                if (bootVersionNo >= 15 && DWNL == "FW_DWNL" && !_ethernetIsResetFirmwareEncryptionMode)
+                if (downloadInProgress == 1)
                 {
-                    WriteBuffer[check.Length + 4] = _ethernetFrmDcryptionCRC[0]; // 2byte crc
-                    WriteBuffer[check.Length + 5] = _ethernetFrmDcryptionCRC[1];
+                    WriteBuffer[check.Length] = BitConverter.GetBytes(_ethernetFrmDcryptionSize)[0]; //Firware size
+                    WriteBuffer[check.Length + 1] = BitConverter.GetBytes(_ethernetFrmDcryptionSize)[1];
+                    WriteBuffer[check.Length + 2] = BitConverter.GetBytes(_ethernetFrmDcryptionSize)[2];
+                    WriteBuffer[check.Length + 3] = BitConverter.GetBytes(_ethernetFrmDcryptionSize)[3];
+
+                    WriteBuffer[check.Length + 4] = arrCRCTotal[0]; // 2byte crc
+                    WriteBuffer[check.Length + 5] = arrCRCTotal[1];
+
+                    if (bootVersionNo >= 11)
+                    {
+                        WriteBuffer[check.Length + 4] = _ethernetFrmDcryptionCRC[0]; // 2byte crc
+                        WriteBuffer[check.Length + 5] = _ethernetFrmDcryptionCRC[1];
+                    }
+
+                    WriteBuffer[check.Length + 6] = fileLength[0];
+                    WriteBuffer[check.Length + 7] = fileLength[1];
+                    WriteBuffer[check.Length + 8] = fileLength[2];
+                    WriteBuffer[check.Length + 9] = fileLength[3];
                 }
+                else
+                {
+                    WriteBuffer[check.Length] = fileLength[0]; //Firware size
+                    WriteBuffer[check.Length + 1] = fileLength[1];
+                    WriteBuffer[check.Length + 2] = fileLength[2];
+                    WriteBuffer[check.Length + 3] = fileLength[3];
 
-                WriteBuffer[check.Length + 6] = BitConverter.GetBytes(_ethernetFrmDcryptionSize)[0];
-                WriteBuffer[check.Length + 7] = BitConverter.GetBytes(_ethernetFrmDcryptionSize)[1];
-                WriteBuffer[check.Length + 8] = BitConverter.GetBytes(_ethernetFrmDcryptionSize)[2];
-                WriteBuffer[check.Length + 9] = BitConverter.GetBytes(_ethernetFrmDcryptionSize)[3];
+                    WriteBuffer[check.Length + 4] = arrCRCTotal[0]; // 2byte crc
+                    WriteBuffer[check.Length + 5] = arrCRCTotal[1];
 
+                }
 
                 //Change Shubham
                 //Below code commneted and added in try catch

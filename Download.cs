@@ -13,6 +13,7 @@ using System.Security.Cryptography;
 using System.Windows.Forms;
 using System.Xml.Linq;
 using static Supporting_DLL.CONSTANTS;
+using Serilog;
 
 namespace SerialPortCommunication
 {
@@ -64,8 +65,8 @@ namespace SerialPortCommunication
             set
             {
                 _downloadInProgress = value;
-               // btnClose.Enabled = !value;
-               // btnDownload.Enabled = !value;
+                // btnClose.Enabled = !value;
+                // btnDownload.Enabled = !value;
             }
         }
 
@@ -156,9 +157,9 @@ namespace SerialPortCommunication
                     String s_PortName = Registry.GetValue(s_RegPath, "PortName", "").ToString();
                     if (s_DeviceID.StartsWith("U"))
                     {
-                        _USBPortList.Add(s_PortName);                       
+                        _USBPortList.Add(s_PortName);
                     }
-                  
+
                     int s32_Pos = s_Caption.IndexOf(" (COM");
                     if (s32_Pos > 0) // remove COM port from description
                         s_Caption = s_Caption.Substring(0, s32_Pos);
@@ -182,7 +183,7 @@ namespace SerialPortCommunication
 
             for (int i = 0; i < _comPortList.Count; i++)
             {
-                    cmbPortName.Items.Add(_comPortList[i]);
+                cmbPortName.Items.Add(_comPortList[i]);
             }
 
             //foreach (string port in ports)
@@ -295,7 +296,7 @@ namespace SerialPortCommunication
             GroupBox box = (GroupBox)sender;
             p.Graphics.Clear(SystemColors.Control);
             //p.Graphics.DrawString(box.Text, box.Font, Brushes.Black, 0, 0);
-         }
+        }
 
         public void SetPrerequisites()
         {
@@ -319,23 +320,27 @@ namespace SerialPortCommunication
             {
                 chbxMacID.Checked = true;
             }
-            
+
             listBox1.SelectedItem = AppData.CommunicationType;
-            
+
             txtFirmwareFilePath.Enabled = false;
             txtBoxEthernetFile.Enabled = false;
             txtAppFilePath.Enabled = false;
             btnApplicationBrowse.Enabled = false;
             btnFirmwareBrowse.Enabled = false;
 
-            listBox1.SelectedItem = "Serial";
-            chkBoxFirmawareFile.Checked = true;
+            //listBox1.SelectedItem = "Serial";
+            //chkBoxFirmawareFile.Checked = true;
 
             BtnDownload_Click(this, null);
         }
 
         private void Download_Load(object sender, EventArgs e)
         {
+            //Log.Information("Download_Load: StandAloneUtility={StandAlone}, IsDownload={IsDownload}, IP={IP}, Port={Port}",
+            //_standAloneUtility, _isDownload, txtBoxIPAddress.Text, txtBoxPortNumber.Text);
+
+
             // IsEthernetModel = _checkIsEthernetModel();
 
             //if (IsEthernetModel == false)
@@ -343,7 +348,7 @@ namespace SerialPortCommunication
             //    listBox1.Items.Remove("Ethernet");
             //    chkboxEthernetSettings.Enabled = false;
             //}
-            
+
             PortNo = Convert.ToInt32(txtBoxPortNumber.Text); //ethernet port no set to 5000
 
             string filePath1 = Path.Combine(Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath), "Production" + ".xml");
@@ -404,11 +409,11 @@ namespace SerialPortCommunication
 
             txtBoxIPAddress.Text = Settings.Default.IP_Address;
             txtBoxPortNumber.Text = Settings.Default.Port_Number;
-            
-                SetPrerequisites();
 
-            
-            
+            SetPrerequisites();
+
+
+
         }
 
         public void ReadEthernetConfigFile()
@@ -466,13 +471,13 @@ namespace SerialPortCommunication
 
         internal int AddNeWMacIDSettings()
         {
-            StreamReader oStreamReader=new StreamReader(AppData.MACIDFilePath);
-            var res = oStreamReader.ReadToEnd().Replace("\r\n","\n").Split('\n').ToList(); //text= new StreamReader("MacID.txt");
+            StreamReader oStreamReader = new StreamReader(AppData.MACIDFilePath);
+            var res = oStreamReader.ReadToEnd().Replace("\r\n", "\n").Split('\n').ToList(); //text= new StreamReader("MacID.txt");
             oStreamReader.Close();
             oStreamReader.Dispose();
             string[] MacID_SpliteArr = res.ElementAt(0).Split(':');
-            
-            int MacID_SpliteArr0 = Convert.ToInt32(MacID_SpliteArr[0].Replace('O','0'), 16);
+
+            int MacID_SpliteArr0 = Convert.ToInt32(MacID_SpliteArr[0].Replace('O', '0'), 16);
             int MacID_SpliteArr1 = Convert.ToInt32(MacID_SpliteArr[1].Replace('O', '0'), 16);
             int MacID_SpliteArr2 = Convert.ToInt32(MacID_SpliteArr[2].Replace('O', '0'), 16);
             int MacID_SpliteArr3 = Convert.ToInt32(MacID_SpliteArr[3].Replace('O', '0'), 16);
@@ -495,7 +500,7 @@ namespace SerialPortCommunication
             pFileStream.Dispose();
             AppData.DownloadedMacID = res.ElementAt(0);
             res.RemoveAt(0);
-           
+
             FileStream pFileStream1 = new FileStream(AppData.MACIDFilePath, FileMode.Create);
 
             StreamWriter oStreamWriter = new StreamWriter(pFileStream1);
@@ -577,9 +582,9 @@ namespace SerialPortCommunication
                 communicationParameterObj.DataBit = Convert.ToInt32(cmbDataBits.Text);
                 communicationParameterObj.StopBit = (StopBits)Enum.Parse(typeof(StopBits), cmbStopBit.Text);
 
-                if(ListOfUSBPorts.Count == 0)
+                if (ListOfUSBPorts.Count == 0)
                 {
-                    MessageBox.Show("USB Device not recognized.","Error",MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("USB Device not recognized.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
@@ -657,19 +662,19 @@ namespace SerialPortCommunication
             //    }
             //}
 
-            if (chbxMacID.Checked && (_standAloneUtility == true|| _standAloneUtilityThroughCommand))
+            if (chbxMacID.Checked && (_standAloneUtility == true || _standAloneUtilityThroughCommand))
             {
-                    
-                    if (chbxMacID.Checked)
-                    {
-                        AddNeWMacIDSettings();
-                        string filePath = Path.Combine(Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath), "MacID");
-                         
-                        communicationParameterObj.macIdFilePath = filePath;
-                    }
 
-                    communicationParameterObj.macIdFilePath = Path.Combine(Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath), "MacID");
-                    
+                if (chbxMacID.Checked)
+                {
+                    AddNeWMacIDSettings();
+                    string filePath = Path.Combine(Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath), "MacID");
+
+                    communicationParameterObj.macIdFilePath = filePath;
+                }
+
+                communicationParameterObj.macIdFilePath = Path.Combine(Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath), "MacID");
+
             }
 
             if (checkBoxRTCSync.Checked)
@@ -684,7 +689,7 @@ namespace SerialPortCommunication
                 FileStream pFileStream = new FileStream(filePath, FileMode.CreateNew);
 
                 DateTime now = DateTime.Now;
-                 
+
                 int day = now.Day;
                 int month = now.Month;
                 int year = now.Year - 2000;
@@ -708,7 +713,7 @@ namespace SerialPortCommunication
 
             }
 
-            
+
 
             if (chkBoxApplicationFile.Checked && _standAloneUtility == true)
             {
@@ -760,7 +765,7 @@ namespace SerialPortCommunication
                 }
             }
 
-            if (chkboxEthernetSettings.Checked && (_standAloneUtility||_standAloneUtilityThroughCommand))
+            if (chkboxEthernetSettings.Checked && (_standAloneUtility || _standAloneUtilityThroughCommand))
             {
                 if (_standAloneUtilityThroughCommand)
                 {
@@ -785,7 +790,7 @@ namespace SerialPortCommunication
             {
                 applicationFilePath = AppData.AppPath;
                 communicationParameterObj.applicationFilePath = AppData.AppPath;
-    //            CONSTANTS.BinaryMemoryCalculation res = _saveBinaryFile(applicationFilePath);
+                //            CONSTANTS.BinaryMemoryCalculation res = _saveBinaryFile(applicationFilePath);
 
                 //            long dataLogSize = 0;
 
@@ -805,7 +810,7 @@ namespace SerialPortCommunication
                 //}
             }
 
-            
+
             if (chkBoxFirmawareFile.Checked == true && (_standAloneUtility || _standAloneUtilityThroughCommand))
             {
 
@@ -814,55 +819,72 @@ namespace SerialPortCommunication
                     communicationParameterObj.firmwareFilePath = AppData.FirmwarePath; //Path.Combine(Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath));
                     communicationParameterObj.modelID = Convert.ToInt32(AppData.ModelID);
                     communicationParameterObj.IPAddress = AppData.IPAddress;
-                    txtBoxIPAddress.Text= AppData.IPAddress;
+                    txtBoxIPAddress.Text = AppData.IPAddress;
 
-                    //
 
-                    string rootPathForResetFirmwareEncryptionMode = Path.Combine(Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath), "ResetFirmwareEncryptionMode.txt");
+                    if (!File.Exists(AppData.EncryptionFilePath))
+                    {
+                        MessageBox.Show("Encryption File is missing.", "File Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
 
-                    if (File.Exists(rootPathForResetFirmwareEncryptionMode))
-                        rootPathForResetFirmwareEncryptionMode = File.ReadAllText(rootPathForResetFirmwareEncryptionMode);
+                        Environment.ExitCode = 0; 
+                        Application.Exit();
 
-                    if (rootPathForResetFirmwareEncryptionMode == "EF")
-                        communicationParameterObj.IsResetFirmwareEncryptionMode = true;
-                    else
-                        communicationParameterObj.IsResetFirmwareEncryptionMode = false;
+                        return;
+                    }
+
 
 
                     //string path = Directory.GetParent(communicationParameterObj.firmwareFilePath).FullName + "\\";
-                    string path = communicationParameterObj.firmwareFilePath; 
+                    string path = communicationParameterObj.firmwareFilePath;
 
-                    byte[] key = GenerateRandomBytes(16); // AES-128 requires a 16-byte key
-                    byte[] iv = GenerateRandomBytes(16);  // IV should also be 16 bytes
+                    //Log.Information("Firmware file path: {Path}", path);
 
-                   // WriteEncryptionKeyFile(key, iv, path); // check path with sagar
 
-                    WriteEncryptionKeyFile(key, iv, path, communicationParameterObj.IsResetFirmwareEncryptionMode);
+                    //byte[] key = GenerateRandomBytes(16); // AES-128 requires a 16-byte key
+                    //byte[] iv = GenerateRandomBytes(16);  // IV should also be 16 bytes
 
-                    if (File.Exists(path+ Path.GetFileName(path)+ "_encrypted"))
-                    {
-                        File.Delete(path + Path.GetFileName(path) + "_encrypted");
-                    }
-                    if (File.Exists(path+ Path.GetFileName(path)+ "_decrypted"))
-                    {
-                        File.Delete(path + Path.GetFileName(path) + "_decrypted");
-                    }
+                    // WriteEncryptionKeyFile(key, iv, path); // check path with sagar
 
-                    EncryptFile(communicationParameterObj.firmwareFilePath,communicationParameterObj.firmwareFilePath + "_encrypted", key, iv);
+                    //WriteEncryptionKeyFile(key, iv, path, communicationParameterObj.IsResetFirmwareEncryptionMode);
 
-                    DecryptFile(communicationParameterObj.firmwareFilePath + "_encrypted" , communicationParameterObj.firmwareFilePath + "_decrypted", key, iv);
+                    string rootPath = AppData.EncryptionFilePath;
 
-                    string filenameForDecryptedFirmwareCRC = path+ "\\12";
+                    byte[] key = new byte[16];
+                    byte[] iv = new byte[16];
 
-                    filenameForDecryptedFirmwareCRC += "_decrypted";
+                    getKeyIV(rootPath, key, iv);
+
+                    //EncryptFile(communicationParameterObj.firmwareFilePath,communicationParameterObj.firmwareFilePath + "_encrypted", key, iv);
+
+                    DecryptFile(communicationParameterObj.firmwareFilePath, Path.Combine(Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath) + "\\Firmware_decrypted"), key, iv);
+
+
+                    string filenameForDecryptedFirmwareCRC = Path.Combine(Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath) + "\\Firmware_decrypted");
+
+                    //filenameForDecryptedFirmwareCRC += "_decrypted";
 
                     try
                     {
                         // Read the entire file as a byte array
                         byte[] fileBytes = File.ReadAllBytes(filenameForDecryptedFirmwareCRC);
 
+                        //Log.Information("Decrypted firmware file size: {Size} bytes", fileBytes.Length);
+
+                        communicationParameterObj.FrmDcryptionSize = fileBytes.Length;
+
                         // Call your CRC calculation function
                         communicationParameterObj.FrmDcryptionCRC = CalculateCRC(fileBytes, 0, (int)fileBytes.Length);
+
+                        // Log.Information("Decrypted firmware CRC: {CRC-0}", communicationParameterObj.FrmDcryptionCRC[0]);
+                        // Log.Information("Decrypted firmware CRC: {CRC-1}", communicationParameterObj.FrmDcryptionCRC[1]);
+
+                        if (File.Exists(Path.Combine(Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath) + "\\Firmware_decrypted")))
+                        {
+                            File.Delete(Path.Combine(Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath) + "\\Firmware_decrypted"));
+
+                            //  Log.Information("Decrypted firmware file deleted: {Path}", Path.Combine(Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath) + "\\Firmware_decrypted"));
+                        }
+
                     }
                     catch (Exception ex)
                     {
@@ -873,7 +895,7 @@ namespace SerialPortCommunication
                 }
                 else
                 {
-                    
+
                     List<string> projectProductIdAndModelId = _getProjectModelIdForFirmawarFilePath();
 
                     // ****************** IMP ****************** //
@@ -914,7 +936,45 @@ namespace SerialPortCommunication
 
             communicationParameterObj._isStandAloneUtility = _standAloneUtility;
 
+            //Log.Information("BtnDownload_Click: Mode={Mode}, Port={Port}, Baud={Baud}, Firmware={Firmware}, App={App}",
+            //listBox1.SelectedItem, cmbPortName.Text, cmbBaudRate.SelectedItem, chkBoxFirmawareFile.Checked, chkBoxApplicationFile.Checked);
+
+            communicationParameterObj.modelID = Convert.ToInt32(AppData.ModelID);
+            communicationParameterObj.encryptionFilePath = AppData.EncryptionFilePath;
+
             _connectUIserialToController(communicationParameterObj);
+        }
+
+        private void getKeyIV(string rootPath, byte[] key, byte[] iv)
+        {
+            FileStream pFileStream = new FileStream(rootPath, FileMode.Open);
+
+            byte[] buffer1 = new byte[128];
+
+
+            Array.Clear(buffer1, 0, 128);
+            pFileStream.Read(buffer1, 0, 128);
+
+            int index = 2;
+            Array.Copy(buffer1, index, key, 0, 4);
+            index += 12;
+            Array.Copy(buffer1, index, key, 4, 4);
+            index += 12;
+            Array.Copy(buffer1, index, key, 8, 4);
+            index += 12;
+            Array.Copy(buffer1, index, key, 12, 4);
+            index += 12;
+
+            Array.Copy(buffer1, index, iv, 0, 4);
+            index += 12;
+            Array.Copy(buffer1, index, iv, 4, 4);
+            index += 12;
+            Array.Copy(buffer1, index, iv, 8, 4);
+            index += 12;
+            Array.Copy(buffer1, index, iv, 12, 4);
+
+            pFileStream.Close();
+            pFileStream.Dispose();
         }
 
         static byte[] GenerateRandomBytes(int length)
@@ -929,6 +989,14 @@ namespace SerialPortCommunication
 
         static void DecryptFile(string inputFile, string outputFile, byte[] key, byte[] iv)
         {
+            // Log.Information("DecryptFile: Starting decryption. InputFile={InputFile}, OutputFile={OutputFile}", inputFile, outputFile);
+
+            var binFiles = Directory.GetFiles(Path.Combine(Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath)));
+
+            var files = binFiles.Where(f => f.Contains("_decrypted")).ToList();
+            foreach (var binFile in files)
+                File.Delete(binFile);
+
             using (var aes = Aes.Create())
             {
                 aes.Key = key;
@@ -942,6 +1010,8 @@ namespace SerialPortCommunication
                     cryptoStream.CopyTo(outputStream);
                 }
             }
+
+            // Log.Information("DecryptFile: Decryption completed successfully. OutputFile={OutputFile}", outputFile);
         }
 
 
@@ -1126,7 +1196,7 @@ namespace SerialPortCommunication
 
                 if (val < 0)
                 {
-                   // btnDownload.Enabled = true;
+                    // btnDownload.Enabled = true;
 
                     listBox1.Enabled = true;
                     chkBoxFirmawareFile.Enabled = true;
@@ -1193,7 +1263,7 @@ namespace SerialPortCommunication
 
                         downloadInProgress = false;
                         btnDownload.Enabled = false;
-                       // btnClose.Enabled = false;
+                        // btnClose.Enabled = false;
 
                         chkBoxFirmawareFile.Enabled = false;
                         chkBoxApplicationFile.Enabled = false;
@@ -1207,8 +1277,8 @@ namespace SerialPortCommunication
                         grpBoxUSB.Enabled = false;
                         grpBoxEthernet.Enabled = false;
                         grpBoxCOMPort.Enabled = false;
-                        
-                        
+
+
                     }
                     else if (val == -11)
                     {
@@ -1216,7 +1286,7 @@ namespace SerialPortCommunication
                         downloadInProgress = false;
                         btnDownload.Enabled = false;
                         btnClose.Enabled = false;
-                      
+
                     }
                     else if (val == -12)
                     {
@@ -1283,10 +1353,10 @@ namespace SerialPortCommunication
                     //else
                     //    toolStripStatusLabel1.Text = pCurrentDownload + " upload in completed.";
 
-                    downloadInProgress = false;                    
+                    downloadInProgress = false;
                 }
                 else
-                {                    
+                {
 
                 }
 
@@ -1393,7 +1463,7 @@ namespace SerialPortCommunication
             }
         }
 
-        private void  ChkboxEthernetSettings_CheckStateChanged(object sender, EventArgs e)
+        private void ChkboxEthernetSettings_CheckStateChanged(object sender, EventArgs e)
         {
             lblethernetFile.Visible = chkboxEthernetSettings.Checked;
             txtBoxEthernetFile.Visible = chkboxEthernetSettings.Checked;
@@ -1425,7 +1495,7 @@ namespace SerialPortCommunication
         {
             this.Close();
         }
-        bool isclosed=false;
+        bool isclosed = false;
         private void Download_FormClosing(object sender, FormClosingEventArgs e)
         {
 
@@ -1433,7 +1503,7 @@ namespace SerialPortCommunication
             {
                 Application.Exit();
                 //this.Close();
-               
+
             }
             else
             {
@@ -1478,15 +1548,15 @@ namespace SerialPortCommunication
             }
             else
             {
-                if (chkboxEthernetSettings.Checked || chkBoxFontFile.Checked || chkBoxLadderFile.Checked || 
+                if (chkboxEthernetSettings.Checked || chkBoxFontFile.Checked || chkBoxLadderFile.Checked ||
                      chkBoxApplicationFile.Checked || chkBoxFirmawareFile.Checked || chbxMacID.Checked)
                 {
                     btnDownload.Enabled = true;
                     listBox1.Enabled = true;
                     chkBoxFirmawareFile.Enabled = true;
                     chkBoxApplicationFile.Enabled = true;
-                    if(IsEthernetModel)
-                    chkboxEthernetSettings.Enabled = true;
+                    if (IsEthernetModel)
+                        chkboxEthernetSettings.Enabled = true;
                     chbxMacID.Enabled = true;
                     checkBoxRTCSync.Enabled = true;
                     chkBoxFontFile.Enabled = true;
@@ -1516,8 +1586,8 @@ namespace SerialPortCommunication
                 else
                 {
                     btnDownload.Enabled = false;
-                    if(listBox1.SelectedIndex != 0)
-                    checkBoxRTCSync.Enabled = true;
+                    if (listBox1.SelectedIndex != 0)
+                        checkBoxRTCSync.Enabled = true;
 
                 }
             }
@@ -1629,7 +1699,7 @@ namespace SerialPortCommunication
                 this.Close();
             }
 
-        }       
+        }
 
 
         private void txtBoxIPAddress_Leave(object sender, EventArgs e)
@@ -1641,7 +1711,7 @@ namespace SerialPortCommunication
                 txtBoxIPAddress.Text = "192.168.0.11";
             }
         }
-        
+
 
         private void txtBoxPortNumber_KeyPress(object sender, KeyPressEventArgs e)
         {

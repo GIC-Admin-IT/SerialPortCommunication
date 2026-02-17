@@ -122,6 +122,7 @@ namespace SerialPortCommunication
 		public string fontFilePath;
 		public string ladderFilePath;
 		public string macIdFilePath;
+		public string encryptionFilePath;
 
 		public bool _isStandAloneUtility;
 

@@ -23,6 +23,7 @@ namespace SerialPortCommunication
         public static bool DownloadLadderSetting=false;
         public static string EthernetSettingFilePath;
         public static string FirmwarePath;
+        public static string EncryptionFilePath;
         public static string AppPath;
         public static bool ResultStatus = false;
         public static string Product;
